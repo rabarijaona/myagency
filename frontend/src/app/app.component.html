@@ -1,0 +1,475 @@
+<div class="container">
+  <header>
+    <div class="header-content">
+      <div class="header-left">
+        <h1>{{ title }}</h1>
+        <p class="subtitle">Manage your movies and actors database</p>
+      </div>
+      <div class="header-right">
+        <div class="user-info-header">
+          <span class="role-badge-header">{{ permissions.getRole() }}</span>
+          <button class="btn btn-small btn-secondary" (click)="login()" *ngIf="!isAuthenticated">
+            Login
+          </button>
+          <button class="btn btn-small btn-secondary" (click)="logout()" *ngIf="isAuthenticated">
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Messages -->
+  <div class="messages">
+    <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+    <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+    <div *ngIf="loading" class="alert alert-info">Loading...</div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button
+      class="tab-button"
+      [class.active]="activeTab === 'movies'"
+      (click)="switchTab('movies')">
+      Movies ({{ movies.length }})
+    </button>
+    <button
+      class="tab-button"
+      [class.active]="activeTab === 'actors'"
+      (click)="switchTab('actors')">
+      Actors ({{ actors.length }})
+    </button>
+    <button
+      class="tab-button"
+      [class.active]="activeTab === 'casting'"
+      (click)="switchTab('casting')">
+      Casting
+    </button>
+    <button
+      *ngIf="permissions.canViewUsers()"
+      class="tab-button"
+      [class.active]="activeTab === 'users'"
+      (click)="switchTab('users')">
+      Users ({{ users.length }})
+    </button>
+  </div>
+
+  <!-- Movies Tab -->
+  <div *ngIf="activeTab === 'movies'" class="tab-content">
+    <div *ngIf="permissions.canCreateMovies() || permissions.canEditMovies()" class="section">
+      <h2>{{ isEditingMovie ? 'Edit Movie' : 'Add New Movie' }}</h2>
+      <form class="form" (ngSubmit)="isEditingMovie ? updateMovie() : createMovie()">
+        <div class="form-group">
+          <label for="movieTitle">Title</label>
+          <input
+            id="movieTitle"
+            type="text"
+            [(ngModel)]="movieForm.title"
+            name="title"
+            placeholder="Enter movie title"
+            required>
+        </div>
+        <div class="form-group">
+          <label for="movieReleaseDate">Release Date</label>
+          <input
+            id="movieReleaseDate"
+            type="date"
+            [(ngModel)]="movieForm.release_date"
+            name="release_date"
+            required>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            {{ isEditingMovie ? 'Update Movie' : 'Create Movie' }}
+          </button>
+          <button
+            *ngIf="isEditingMovie"
+            type="button"
+            class="btn btn-secondary"
+            (click)="resetMovieForm()">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="section">
+      <h2>All Movies</h2>
+      <div *ngIf="movies.length === 0" class="empty-state">
+        No movies found. Create your first movie above!
+      </div>
+      <div class="grid">
+        <div *ngFor="let movie of movies" class="card">
+          <h3>{{ movie.title }}</h3>
+          <p class="release-date">Released: {{ movie.release_date }}</p>
+          <div class="card-actions" *ngIf="permissions.canEditMovies() || permissions.canDeleteMovies()">
+            <button *ngIf="permissions.canEditMovies()" class="btn btn-small btn-edit" (click)="editMovie(movie)">Edit</button>
+            <button *ngIf="permissions.canDeleteMovies()" class="btn btn-small btn-delete" (click)="deleteMovie(movie.id!)">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actors Tab -->
+  <div *ngIf="activeTab === 'actors'" class="tab-content">
+    <div *ngIf="permissions.canCreateActors() || permissions.canEditActors()" class="section">
+      <h2>{{ isEditingActor ? 'Edit Actor' : 'Add New Actor' }}</h2>
+      <form class="form" (ngSubmit)="isEditingActor ? updateActor() : createActor()">
+        <div class="form-group">
+          <label for="actorName">Name</label>
+          <input
+            id="actorName"
+            type="text"
+            [(ngModel)]="actorForm.name"
+            name="name"
+            placeholder="Enter actor name"
+            required>
+        </div>
+        <div class="form-group">
+          <label for="actorBirthDate">Birth Date</label>
+          <input
+            id="actorBirthDate"
+            type="date"
+            [(ngModel)]="actorForm.birth_date"
+            name="birth_date"
+            required>
+        </div>
+        <div class="form-group">
+          <label for="actorGender">Gender</label>
+          <select
+            id="actorGender"
+            [(ngModel)]="actorForm.gender"
+            name="gender"
+            required>
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Non-binary">Non-binary</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            {{ isEditingActor ? 'Update Actor' : 'Create Actor' }}
+          </button>
+          <button
+            *ngIf="isEditingActor"
+            type="button"
+            class="btn btn-secondary"
+            (click)="resetActorForm()">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="section">
+      <h2>All Actors</h2>
+      <div *ngIf="actors.length === 0" class="empty-state">
+        No actors found. Create your first actor above!
+      </div>
+      <div class="grid">
+        <div *ngFor="let actor of actors" class="card">
+          <h3>{{ actor.name }}</h3>
+          <p><strong>Age:</strong> {{ actor.age }} years old</p>
+          <p><strong>Birth Date:</strong> {{ actor.birth_date }}</p>
+          <p><strong>Gender:</strong> {{ actor.gender }}</p>
+          <div class="card-actions" *ngIf="permissions.canEditActors() || permissions.canDeleteActors()">
+            <button *ngIf="permissions.canEditActors()" class="btn btn-small btn-edit" (click)="editActor(actor)">Edit</button>
+            <button *ngIf="permissions.canDeleteActors()" class="btn btn-small btn-delete" (click)="deleteActor(actor.id!)">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Casting Tab -->
+  <div *ngIf="activeTab === 'casting'" class="tab-content">
+    <div class="casting-layout">
+      <!-- Movie Selection -->
+      <div class="section">
+        <h2>Select a Movie</h2>
+        <div *ngIf="movies.length === 0" class="empty-state">
+          No movies available. Create movies first!
+        </div>
+        <div class="casting-list">
+          <div
+            *ngFor="let movie of movies"
+            class="casting-item"
+            [class.selected]="selectedMovieForCasting?.id === movie.id"
+            (click)="selectMovieForCasting(movie)">
+            <h4>{{ movie.title }}</h4>
+            <p class="small-text">{{ movie.release_date }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Movie Details and Actors -->
+      <div *ngIf="selectedMovieForCasting" class="section">
+        <h2>{{ selectedMovieForCasting.title }} - Cast</h2>
+
+        <div class="subsection">
+          <h3>Current Cast ({{ movieActors.length }})</h3>
+          <div *ngIf="movieActors.length === 0" class="empty-state">
+            No actors assigned yet.
+          </div>
+          <div class="actor-list">
+            <div *ngFor="let actor of movieActors" class="actor-item">
+              <div>
+                <strong>{{ actor.name }}</strong>
+                <p class="small-text">{{ actor.gender }}, Age: {{ actor.age }}</p>
+              </div>
+              <button
+                *ngIf="permissions.canManageCasting()"
+                class="btn btn-small btn-delete"
+                (click)="removeActor(actor.id)">
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3>Available Actors ({{ availableActors.length }})</h3>
+          <div *ngIf="availableActors.length === 0" class="empty-state">
+            All actors have been assigned to this movie.
+          </div>
+          <div class="actor-list">
+            <div *ngFor="let actor of availableActors" class="actor-item">
+              <div>
+                <strong>{{ actor.name }}</strong>
+                <p class="small-text">{{ actor.gender }}, Age: {{ actor.age }}</p>
+              </div>
+              <button
+                *ngIf="permissions.canManageCasting()"
+                class="btn btn-small btn-primary"
+                (click)="assignActor(actor.id!)">
+                Assign
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actor View -->
+      <div *ngIf="selectedActorForCasting" class="section">
+        <h2>{{ selectedActorForCasting.name }} - Filmography</h2>
+
+        <div class="subsection">
+          <h3>Movies ({{ actorMovies.length }})</h3>
+          <div *ngIf="actorMovies.length === 0" class="empty-state">
+            Not assigned to any movies yet.
+          </div>
+          <div class="movie-list">
+            <div *ngFor="let movie of actorMovies" class="movie-item">
+              <strong>{{ movie.title }}</strong>
+              <p class="small-text">{{ movie.release_date }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users Tab -->
+  <div *ngIf="activeTab === 'users'" class="tab-content">
+    <div class="user-management-layout">
+      <!-- Left Panel: User List -->
+      <div class="section users-list-section">
+        <h2>User Management</h2>
+
+        <!-- Search Bar -->
+        <div class="search-box">
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="searchUsers()"
+            placeholder="Search users by email or name..."
+            class="search-input">
+          <button class="btn btn-primary btn-small" (click)="searchUsers()">Search</button>
+        </div>
+
+        <!-- User List -->
+        <div *ngIf="users.length === 0" class="empty-state">
+          No users found.
+        </div>
+        <div class="user-list">
+          <div
+            *ngFor="let user of users"
+            class="user-item"
+            [class.selected]="selectedUser?.user_id === user.user_id"
+            (click)="selectUser(user)">
+            <div class="user-info">
+              <div class="user-avatar" *ngIf="user.picture">
+                <img [src]="user.picture" [alt]="user.name || user.email">
+              </div>
+              <div class="user-avatar-placeholder" *ngIf="!user.picture">
+                {{ (user.name || user.email || '?')[0].toUpperCase() }}
+              </div>
+              <div class="user-details">
+                <strong>{{ user.name || 'No Name' }}</strong>
+                <p class="small-text">{{ user.email }}</p>
+                <div class="user-roles">
+                  <span *ngFor="let role of user.roles" class="role-badge">
+                    {{ role.name }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" *ngIf="totalUsers > perPage">
+          <button
+            class="btn btn-small"
+            [disabled]="currentPage === 0"
+            (click)="previousPage()">
+            Previous
+          </button>
+          <span class="page-info">
+            Page {{ currentPage + 1 }} of {{ Math.ceil(totalUsers / perPage) }}
+          </span>
+          <button
+            class="btn btn-small"
+            [disabled]="(currentPage + 1) * perPage >= totalUsers"
+            (click)="nextPage()">
+            Next
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Panel: User Details / Create Form -->
+      <div class="section user-details-section">
+        <!-- Create New User Form -->
+        <div *ngIf="(!selectedUser || isEditingUser) && (permissions.canCreateUsers() || permissions.canEditUsers())">
+          <h2>{{ isEditingUser ? 'Edit User' : 'Create New User' }}</h2>
+          <form class="form" (ngSubmit)="isEditingUser ? updateUser() : createUser()">
+            <div class="form-group">
+              <label for="userEmail">Email *</label>
+              <input
+                id="userEmail"
+                type="email"
+                [(ngModel)]="userForm.email"
+                name="email"
+                placeholder="user@example.com"
+                required
+                [disabled]="isEditingUser">
+            </div>
+            <div class="form-group" *ngIf="!isEditingUser">
+              <label for="userPassword">Password *</label>
+              <input
+                id="userPassword"
+                type="password"
+                [(ngModel)]="userForm.password"
+                name="password"
+                placeholder="Enter password"
+                required>
+            </div>
+            <div class="form-group">
+              <label for="userName">Name</label>
+              <input
+                id="userName"
+                type="text"
+                [(ngModel)]="userForm.name"
+                name="name"
+                placeholder="Full name">
+            </div>
+            <div class="form-group" *ngIf="!isEditingUser">
+              <label for="userRole">Initial Role</label>
+              <select
+                id="userRole"
+                [(ngModel)]="userForm.role"
+                name="role">
+                <option value="Casting Assistant">Casting Assistant</option>
+                <option value="Casting Director">Casting Director</option>
+                <option value="Executive Producer">Executive Producer</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                {{ isEditingUser ? 'Update User' : 'Create User' }}
+              </button>
+              <button
+                *ngIf="isEditingUser"
+                type="button"
+                class="btn btn-secondary"
+                (click)="resetUserForm()">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- User Details View -->
+        <div *ngIf="selectedUser && !isEditingUser" class="user-details">
+          <div class="user-header">
+            <div class="user-avatar-large" *ngIf="selectedUser.picture">
+              <img [src]="selectedUser.picture" [alt]="selectedUser.name || selectedUser.email">
+            </div>
+            <div class="user-avatar-placeholder-large" *ngIf="!selectedUser.picture">
+              {{ (selectedUser.name || selectedUser.email || '?')[0].toUpperCase() }}
+            </div>
+            <div>
+              <h2>{{ selectedUser.name || 'No Name' }}</h2>
+              <p class="user-email">{{ selectedUser.email }}</p>
+              <p class="small-text">ID: {{ selectedUser.user_id }}</p>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h3>Account Information</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <label>Created At:</label>
+                <span>{{ selectedUser.created_at || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Updated At:</label>
+                <span>{{ selectedUser.updated_at || 'N/A' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h3>Roles</h3>
+            <div class="roles-display">
+              <span *ngFor="let role of selectedUserRoles" class="role-badge-large">
+                {{ role.name }}
+                <span *ngIf="role.description" class="role-description">
+                  - {{ role.description }}
+                </span>
+              </span>
+              <div *ngIf="selectedUserRoles.length === 0" class="empty-state">
+                No roles assigned
+              </div>
+            </div>
+
+            <div class="assign-role-section">
+              <h4>Assign Role</h4>
+              <div class="role-actions">
+                <button
+                  *ngFor="let role of availableRoles"
+                  class="btn btn-small btn-secondary"
+                  (click)="assignRole(role.id)">
+                  Assign {{ role.name }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="user-actions">
+            <button *ngIf="permissions.canEditUsers()" class="btn btn-primary" (click)="editUser(selectedUser)">
+              Edit User
+            </button>
+            <button *ngIf="permissions.canDeleteUsers()" class="btn btn-delete" (click)="deleteUser(selectedUser.user_id!)">
+              Delete User
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: casting-agency-api
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && gunicorn --bind 0.0.0.0:$PORT src.app:APP"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: AUTH0_DOMAIN
+        sync: false
+      - key: API_AUDIENCE
+        sync: false
+      - key: SKIP_AUTH
+        value: false
+      - key: DATABASE_URL
+        sync: false
+    healthCheckPath: /
+  - type: web
+    name: casting-agency-frontend
+    env: static
+    branch: main
+    buildCommand: "cd frontend && npm install && npm run build -- --configuration production"
+    staticPublishPath: frontend/dist/myagency/browser
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 18.19.0
+
+databases:
+  - name: casting-agency-db
+    databaseName: casting_agency
+    user: casting_agency_user
+    plan: free
+    region: oregon
